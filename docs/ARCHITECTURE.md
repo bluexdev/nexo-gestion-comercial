@@ -3,15 +3,16 @@
 ## Diagrama
 
 ```text
- Navegador React/Vite
+ Producción:
+ Navegador -> Vercel (React/Vite SPA)
         |
-        | HTTPS / JSON / JWT access
+        | HTTPS / JSON / JWT access + refresh cookie
         v
- Vercel o Nginx --------> NestJS / Railway
-                              |
-                              | Prisma + transacciones serializables
-                              v
-                         PostgreSQL
+ Railway (NestJS API)
+        |
+        | Prisma + transacciones serializables
+        v
+ Railway PostgreSQL
 
  Local: Nginx :8080 -> frontend :80
                     -> backend :3000 -> postgres :5432
@@ -44,7 +45,9 @@ Credenciales seed:
 
 ## Despliegue
 
-- Railway: crear PostgreSQL, desplegar el backend con `backend/Dockerfile` y definir las variables de `backend/.env.example`.
-- Vercel: importar el monorepo, usar `vercel.json` y definir `VITE_API_URL=https://<backend>/api`.
-- Configurar `CORS_ORIGIN` con el dominio exacto de Vercel y secretos JWT de al menos 32 caracteres.
+- Frontend: Vercel aloja exclusivamente la SPA React/Vite. La URL publicada actual es `https://frontend-chi-ten-11.vercel.app`.
+- Backend: Railway aloja la API NestJS usando `backend/Dockerfile` y un servicio PostgreSQL administrado.
+- Vercel debe definir `VITE_API_URL=https://<railway-backend-public-url>/api`.
+- Railway debe definir `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `NODE_ENV=production` y `CORS_ORIGIN=https://frontend-chi-ten-11.vercel.app`.
+- La cookie de refresh se emite como `HttpOnly`, `Secure` y `SameSite=None` en producción para permitir el consumo cross-site Vercel -> Railway.
 - Las migraciones y el seed se ejecutan al arrancar la imagen backend.

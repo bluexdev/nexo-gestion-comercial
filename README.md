@@ -71,14 +71,14 @@ npm run lint
 
 ## Producción
 
-El backend está preparado para Railway y el frontend para Vercel. Las URLs finales se completan al conectar cuentas y secretos externos; no se incluyen credenciales en el repositorio.
+El frontend está publicado en Vercel y el backend está preparado para Railway. La URL final de la API se completa al conectar Railway/PostgreSQL y secretos externos; no se incluyen credenciales en el repositorio.
 
 ### Entregables solicitados
 
 - Código fuente: publicar este directorio como repositorio Git.
 - Script de base de datos: `database/schema.sql` contiene el DDL PostgreSQL inicial; las migraciones oficiales están en `backend/prisma/migrations`.
 - Arquitectura: `docs/ARCHITECTURE.md`.
-- Frontend Vercel: usar `vercel.json` desde la raíz.
+- Frontend Vercel: `https://frontend-chi-ten-11.vercel.app` (SPA publicada y verificada con HTTP 200).
 - Backend/API: desplegar `backend/Dockerfile` en Railway o servicio compatible y configurar PostgreSQL.
 
 ### Variables para despliegue
@@ -99,4 +99,4 @@ CORS_ORIGIN=https://<vercel-url>
 NODE_ENV=production
 ```
 
-Sin una URL pública del backend, Vercel puede servir la SPA, pero login y módulos comerciales no podrán consumir la API.
+Sin una URL pública del backend, Vercel sirve la SPA, pero login y módulos comerciales no pueden consumir la API en producción.

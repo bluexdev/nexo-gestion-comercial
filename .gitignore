@@ -7,3 +7,5 @@ coverage
 .DS_Store
 backend/prisma/dev.db
 frontend/screenshots
+
+.vercel
