@@ -1,6 +1,8 @@
 # API
 
-Base local: `http://localhost:3000/api`. Swagger interactivo: `/api/docs`.
+Base local: `http://localhost:3000/api`.
+Base producción: `https://backend-production-05fcc.up.railway.app/api`.
+Swagger producción: `https://backend-production-05fcc.up.railway.app/api/docs`.
 
 ## Endpoints
 

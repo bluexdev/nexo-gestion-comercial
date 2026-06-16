@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1)
 ![Prisma](https://img.shields.io/badge/Prisma-6-2D3748)
 
-Aplicación fullstack para login, productos, órdenes de compra, ingreso de mercadería, facturación y despacho. Incluye modo claro/oscuro, diseño liquid-glass, stock transaccional, Swagger, pruebas y despliegue preparado.
+Aplicación fullstack para login, productos, órdenes de compra, ingreso de mercadería, facturación y despacho. Incluye modo claro/oscuro, diseño liquid-glass, stock transaccional, Swagger, pruebas y despliegue en Vercel/Railway.
 
 ## Quickstart
 
@@ -71,7 +71,7 @@ npm run lint
 
 ## Producción
 
-El frontend está publicado en Vercel y el backend está preparado para Railway. La URL final de la API se completa al conectar Railway/PostgreSQL y secretos externos; no se incluyen credenciales en el repositorio.
+El frontend está publicado en Vercel y el backend en Railway con PostgreSQL administrado. No se incluyen credenciales ni secretos reales en el repositorio.
 
 ### Entregables solicitados
 
@@ -79,14 +79,16 @@ El frontend está publicado en Vercel y el backend está preparado para Railway.
 - Script de base de datos: `database/schema.sql` contiene el DDL PostgreSQL inicial; las migraciones oficiales están en `backend/prisma/migrations`.
 - Arquitectura: `docs/ARCHITECTURE.md`.
 - Frontend Vercel: `https://frontend-chi-ten-11.vercel.app` (SPA publicada y verificada con HTTP 200).
-- Backend/API: desplegar `backend/Dockerfile` en Railway o servicio compatible y configurar PostgreSQL.
+- Backend Railway: `https://backend-production-05fcc.up.railway.app`.
+- Swagger público: `https://backend-production-05fcc.up.railway.app/api/docs`.
+- API pública: `https://backend-production-05fcc.up.railway.app/api`.
 
 ### Variables para despliegue
 
 Vercel:
 
 ```bash
-VITE_API_URL=https://<backend-public-url>/api
+VITE_API_URL=https://backend-production-05fcc.up.railway.app/api
 ```
 
 Backend:
@@ -95,8 +97,8 @@ Backend:
 DATABASE_URL=postgresql://...
 JWT_ACCESS_SECRET=<secret-32-plus-chars>
 JWT_REFRESH_SECRET=<secret-32-plus-chars>
-CORS_ORIGIN=https://<vercel-url>
+CORS_ORIGIN=https://frontend-chi-ten-11.vercel.app
 NODE_ENV=production
 ```
 
-Sin una URL pública del backend, Vercel sirve la SPA, pero login y módulos comerciales no pueden consumir la API en producción.
+La conexión Vercel -> Railway fue validada mediante login cross-origin con CORS, cookie `HttpOnly/Secure/SameSite=None` y access token en respuesta.
