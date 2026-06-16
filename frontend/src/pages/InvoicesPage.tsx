@@ -25,6 +25,7 @@ export function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('issueDate');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [loading, setLoading] = useState(true);
   const [drawer, setDrawer] = useState(false);
   const [detail, setDetail] = useState<Invoice | null>(null);
   const [cancelInvoice, setCancelInvoice] = useState<Invoice | null>(null);
@@ -36,16 +37,19 @@ export function InvoicesPage() {
   const subtotal = useMemo(() => lines.reduce((sum, line) => sum + Number(line.quantity || 0) * Number(line.unitPrice || 0), 0), [lines]);
   const tax = Math.round(subtotal * 18) / 100;
   const load = useCallback(async () => {
-    const { data } = await api.get<PagedResponse<Invoice>>('/invoices', {
-      params: {
-        page,
-        search,
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        sortBy,
-        sortOrder,
-      },
-    });
-    setResult(data);
+    setLoading(true);
+    try {
+      const { data } = await api.get<PagedResponse<Invoice>>('/invoices', {
+        params: {
+          page,
+          search,
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          sortBy,
+          sortOrder,
+        },
+      });
+      setResult(data);
+    } finally { setLoading(false); }
   }, [page, search, sortBy, sortOrder, statusFilter]);
   const loadCatalogs = async () => {
     const [customerRes, productRes] = await Promise.all([
@@ -94,12 +98,12 @@ export function InvoicesPage() {
     <section>
       <PageHeader title="FACTURACIÓN" action={<button className="btn-primary" onClick={() => { reset({ customerId: '', notes: '', details: [{ productId: '', quantity: 1, unitPrice: 0 }] }); setDrawer(true); }}>+ Nueva factura</button>} />
       <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard compact value={result.total} label="Facturas filtradas" detail={`${result.data.length} visibles`} />
-        <MetricCard compact value={money(invoiceSummary.visibleSales)} label="Venta visible" detail="Sin canceladas" />
-        <MetricCard compact value={invoiceSummary.readyToDispatch} label="Listas para despacho" detail="Emitidas o pagadas" />
-        <MetricCard compact value={invoiceSummary.dispatched} label="Despachadas visibles" detail={`${invoiceSummary.cancelled} canceladas`} />
+        <MetricCard compact loading={loading} value={result.total} label="Facturas filtradas" detail={`${result.data.length} visibles`} />
+        <MetricCard compact loading={loading} value={money(invoiceSummary.visibleSales)} label="Venta visible" detail="Sin canceladas" />
+        <MetricCard compact loading={loading} value={invoiceSummary.readyToDispatch} label="Listas para despacho" detail="Emitidas o pagadas" />
+        <MetricCard compact loading={loading} value={invoiceSummary.dispatched} label="Despachadas visibles" detail={`${invoiceSummary.cancelled} canceladas`} />
       </div>
-      <DataTable rows={result.data} columns={columns} search={search} onSearch={(value) => { setSearch(value); setPage(1); }} page={page} totalPages={result.totalPages} onPage={setPage} sortBy={sortBy} sortOrder={sortOrder} onSort={(key, order) => { setSortBy(key); setSortOrder(order); setPage(1); }} filters={<div><span className="label">Estado</span><SelectMenu compact ariaLabel="Filtrar facturas por estado" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: 'all', label: 'Todos' }, { value: 'ISSUED', label: 'Emitida' }, { value: 'PAID', label: 'Pagada' }, { value: 'DISPATCHED', label: 'Despachada' }, { value: 'CANCELLED', label: 'Cancelada' }]} /></div>} />
+      <DataTable rows={result.data} columns={columns} search={search} onSearch={(value) => { setSearch(value); setPage(1); }} page={page} totalPages={result.totalPages} onPage={setPage} loading={loading} sortBy={sortBy} sortOrder={sortOrder} onSort={(key, order) => { setSortBy(key); setSortOrder(order); setPage(1); }} filters={<div><span className="label">Estado</span><SelectMenu compact ariaLabel="Filtrar facturas por estado" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: 'all', label: 'Todos' }, { value: 'ISSUED', label: 'Emitida' }, { value: 'PAID', label: 'Pagada' }, { value: 'DISPATCHED', label: 'Despachada' }, { value: 'CANCELLED', label: 'Cancelada' }]} /></div>} />
       <FormDrawer open={drawer} title="Nueva factura" onClose={() => setDrawer(false)}>
         <form className="space-y-6" onSubmit={handleSubmit(submit)}>
           <div><div className="mb-2 flex items-center justify-between"><span className="label !mb-0">Cliente</span><button type="button" className="text-[11px] text-accent" onClick={() => setNewCustomer(!newCustomer)}><UserPlus className="mr-1 inline" size={14} /> Crear inline</button></div><SearchSelect value={watch('customerId')} onChange={(value) => setValue('customerId', value, { shouldDirty: true, shouldValidate: true })} options={customers.map((item) => ({ value: item.id, label: item.name, meta: item.docNumber }))} /></div>

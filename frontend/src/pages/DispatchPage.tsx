@@ -22,26 +22,34 @@ export function DispatchPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('dispatchedAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [loading, setLoading] = useState(true);
+  const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [drawer, setDrawer] = useState(false);
   const { register, handleSubmit, reset, watch, setValue, formState: { isSubmitting } } = useForm<Form>();
   const load = useCallback(async () => {
-    const { data } = await api.get<PagedResponse<Dispatch>>('/dispatches', {
-      params: {
-        page,
-        search,
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        sortBy,
-        sortOrder,
-      },
-    });
-    setResult(data);
+    setLoading(true);
+    try {
+      const { data } = await api.get<PagedResponse<Dispatch>>('/dispatches', {
+        params: {
+          page,
+          search,
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          sortBy,
+          sortOrder,
+        },
+      });
+      setResult(data);
+    } finally { setLoading(false); }
   }, [page, search, sortBy, sortOrder, statusFilter]);
   const loadInvoices = async () => {
-    const [issued, paid] = await Promise.all([
-      api.get<PagedResponse<Invoice>>('/invoices', { params: { status: 'ISSUED', limit: 100 } }),
-      api.get<PagedResponse<Invoice>>('/invoices', { params: { status: 'PAID', limit: 100 } }),
-    ]);
-    setInvoices([...issued.data.data, ...paid.data.data]);
+    setInvoicesLoading(true);
+    try {
+      const [issued, paid] = await Promise.all([
+        api.get<PagedResponse<Invoice>>('/invoices', { params: { status: 'ISSUED', limit: 100 } }),
+        api.get<PagedResponse<Invoice>>('/invoices', { params: { status: 'PAID', limit: 100 } }),
+      ]);
+      setInvoices([...issued.data.data, ...paid.data.data]);
+    } finally { setInvoicesLoading(false); }
   };
   useEffect(() => { const timer = setTimeout(load, 250); return () => clearTimeout(timer); }, [load]);
   useEffect(() => { void loadInvoices(); }, []);
@@ -72,12 +80,12 @@ export function DispatchPage() {
     <section>
       <PageHeader title="DESPACHO" action={<button className="btn-primary" onClick={() => { reset({ invoiceId: '', carrier: '', trackingCode: '', address: '', notes: '' }); setDrawer(true); }}>+ Nuevo despacho</button>} />
       <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard compact value={result.total} label="Despachos filtrados" detail={`${result.data.length} visibles`} />
-        <MetricCard compact value={dispatchSummary.pending} label="Pendientes visibles" detail="Requieren salida" />
-        <MetricCard compact value={dispatchSummary.inTransit} label="En tránsito visibles" detail="Seguimiento activo" />
-        <MetricCard compact value={dispatchSummary.availableInvoices} label="Facturas disponibles" detail={`${dispatchSummary.closed} cerrados visibles`} />
+        <MetricCard compact loading={loading} value={result.total} label="Despachos filtrados" detail={`${result.data.length} visibles`} />
+        <MetricCard compact loading={loading} value={dispatchSummary.pending} label="Pendientes visibles" detail="Requieren salida" />
+        <MetricCard compact loading={loading} value={dispatchSummary.inTransit} label="En tránsito visibles" detail="Seguimiento activo" />
+        <MetricCard compact loading={loading || invoicesLoading} value={dispatchSummary.availableInvoices} label="Facturas disponibles" detail={`${dispatchSummary.closed} cerrados visibles`} />
       </div>
-      <DataTable rows={result.data} columns={columns} search={search} onSearch={(value) => { setSearch(value); setPage(1); }} page={page} totalPages={result.totalPages} onPage={setPage} sortBy={sortBy} sortOrder={sortOrder} onSort={(key, order) => { setSortBy(key); setSortOrder(order); setPage(1); }} filters={<div><span className="label">Estado</span><SelectMenu compact ariaLabel="Filtrar despachos por estado" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: 'all', label: 'Todos' }, { value: 'PENDING', label: 'Pendiente' }, { value: 'IN_TRANSIT', label: 'En tránsito' }, { value: 'DELIVERED', label: 'Entregado' }, { value: 'RETURNED', label: 'Retornado' }]} /></div>} />
+      <DataTable rows={result.data} columns={columns} search={search} onSearch={(value) => { setSearch(value); setPage(1); }} page={page} totalPages={result.totalPages} onPage={setPage} loading={loading} sortBy={sortBy} sortOrder={sortOrder} onSort={(key, order) => { setSortBy(key); setSortOrder(order); setPage(1); }} filters={<div><span className="label">Estado</span><SelectMenu compact ariaLabel="Filtrar despachos por estado" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: 'all', label: 'Todos' }, { value: 'PENDING', label: 'Pendiente' }, { value: 'IN_TRANSIT', label: 'En tránsito' }, { value: 'DELIVERED', label: 'Entregado' }, { value: 'RETURNED', label: 'Retornado' }]} /></div>} />
       <FormDrawer open={drawer} title="Nuevo despacho" onClose={() => setDrawer(false)}>
         <form className="space-y-5" onSubmit={handleSubmit(submit)}>
           <div><span className="label">Factura disponible</span><SearchSelect value={watch('invoiceId')} onChange={(value) => { setValue('invoiceId', value); const invoice = invoices.find((item) => item.id === value); if (invoice?.customer.address) setValue('address', invoice.customer.address); }} options={invoices.map((invoice) => ({ value: invoice.id, label: `${invoice.number} · ${invoice.customer.name}`, meta: invoice.status }))} /></div>

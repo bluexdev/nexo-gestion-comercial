@@ -22,6 +22,8 @@ export function DataTable<T>({ rows, columns, search, onSearch, page, totalPages
   filters?: ReactNode; sortBy?: string; sortOrder?: SortOrder;
   onSort?: (sortBy: string, sortOrder: SortOrder) => void;
 }) {
+  const skeletonRows = Array.from({ length: 5 });
+  const skeletonWidths = ['w-24', 'w-36', 'w-20', 'w-32', 'w-28'];
   const changeSort = (key: string) => {
     onSort?.(key, sortBy === key && sortOrder === 'asc' ? 'desc' : 'asc');
   };
@@ -34,18 +36,26 @@ export function DataTable<T>({ rows, columns, search, onSearch, page, totalPages
         </label>
         {filters && <div className="flex flex-wrap items-end gap-3">{filters}</div>}
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" aria-busy={loading}>
         <table className="w-full min-w-[760px] border-collapse">
           <thead><tr>{columns.map((column) => <th key={column.key} className="border-b border-border px-4 py-4 text-left text-[11px] font-normal text-muted">{column.sortKey && onSort ? <button type="button" className="inline-flex items-center gap-2 transition-colors hover:text-primary" onClick={() => changeSort(column.sortKey!)} aria-label={`Ordenar por ${column.label}`}>{column.label}{sortBy !== column.sortKey ? <ArrowUpDown size={13} /> : sortOrder === 'asc' ? <ArrowUp size={13} className="text-accent" /> : <ArrowDown size={13} className="text-accent" />}</button> : column.label}</th>)}</tr></thead>
           <tbody>
-            {!loading && rows.map((row, index) => (
+            {loading ? skeletonRows.map((_, rowIndex) => (
+              <tr key={`skeleton-${rowIndex}`} className="text-sm" aria-label="Cargando fila">
+                {columns.map((column, columnIndex) => (
+                  <td key={column.key} className="border-b border-border px-4 py-4">
+                    <div className={`skeleton-shimmer h-4 rounded-full ${skeletonWidths[columnIndex % skeletonWidths.length]}`} />
+                  </td>
+                ))}
+              </tr>
+            )) : rows.map((row, index) => (
               <tr key={index} className="text-sm text-primary/80 hover:bg-glass">
                 {columns.map((column) => <td key={column.key} className="border-b border-border px-4 py-4">{column.render(row)}</td>)}
               </tr>
             ))}
           </tbody>
         </table>
-        {(loading || !rows.length) && <div className="py-16 text-center text-xs text-muted">{loading ? 'Cargando...' : empty}</div>}
+        {!loading && !rows.length && <div className="py-16 text-center text-xs text-muted">{empty}</div>}
       </div>
       <div className="mt-6 flex items-center justify-end gap-3">
         <button className="btn-secondary !p-3" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Página anterior"><ChevronLeft size={16} /></button>

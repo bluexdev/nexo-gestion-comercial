@@ -25,6 +25,7 @@ export function PurchaseOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [loading, setLoading] = useState(true);
   const [drawer, setDrawer] = useState(false);
   const [detail, setDetail] = useState<PurchaseOrder | null>(null);
   const [cancelOrder, setCancelOrder] = useState<PurchaseOrder | null>(null);
@@ -33,16 +34,19 @@ export function PurchaseOrdersPage() {
   const lines = useWatch({ control, name: 'details' }) ?? [];
   const total = useMemo(() => lines.reduce((sum, line) => sum + Number(line.quantity || 0) * Number(line.unitPrice || 0), 0), [lines]);
   const load = useCallback(async () => {
-    const { data } = await api.get<PagedResponse<PurchaseOrder>>('/purchase-orders', {
-      params: {
-        page,
-        search,
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        sortBy,
-        sortOrder,
-      },
-    });
-    setResult(data);
+    setLoading(true);
+    try {
+      const { data } = await api.get<PagedResponse<PurchaseOrder>>('/purchase-orders', {
+        params: {
+          page,
+          search,
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          sortBy,
+          sortOrder,
+        },
+      });
+      setResult(data);
+    } finally { setLoading(false); }
   }, [page, search, sortBy, sortOrder, statusFilter]);
   useEffect(() => { const timer = setTimeout(load, 250); return () => clearTimeout(timer); }, [load]);
   const orderSummary = useMemo(() => {
@@ -85,12 +89,12 @@ export function PurchaseOrdersPage() {
     <section>
       <PageHeader title="ÓRDENES DE COMPRA" action={<button className="btn-primary" onClick={() => { reset({ supplierId: '', notes: '', details: [{ productId: '', quantity: 1, unitPrice: 0 }] }); setDrawer(true); }}>+ Nueva orden</button>} />
       <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard compact value={result.total} label="Órdenes filtradas" detail={`${result.data.length} visibles`} />
-        <MetricCard compact value={orderSummary.openOrders} label="Abiertas visibles" detail="Pendientes o parciales" />
-        <MetricCard compact value={orderSummary.pendingUnits} label="Unidades por recibir" detail={money(orderSummary.openValue)} />
-        <MetricCard compact value={orderSummary.receivedRows} label="Recibidas visibles" detail="Cerradas por ingreso" />
+        <MetricCard compact loading={loading} value={result.total} label="Órdenes filtradas" detail={`${result.data.length} visibles`} />
+        <MetricCard compact loading={loading} value={orderSummary.openOrders} label="Abiertas visibles" detail="Pendientes o parciales" />
+        <MetricCard compact loading={loading} value={orderSummary.pendingUnits} label="Unidades por recibir" detail={money(orderSummary.openValue)} />
+        <MetricCard compact loading={loading} value={orderSummary.receivedRows} label="Recibidas visibles" detail="Cerradas por ingreso" />
       </div>
-      <DataTable rows={result.data} columns={columns} search={search} onSearch={(value) => { setSearch(value); setPage(1); }} page={page} totalPages={result.totalPages} onPage={setPage} sortBy={sortBy} sortOrder={sortOrder} onSort={(key, order) => { setSortBy(key); setSortOrder(order); setPage(1); }} filters={<div><span className="label">Estado</span><SelectMenu compact ariaLabel="Filtrar órdenes por estado" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: 'all', label: 'Todos' }, { value: 'PENDING', label: 'Pendiente' }, { value: 'PARTIAL', label: 'Parcial' }, { value: 'RECEIVED', label: 'Recibida' }, { value: 'CANCELLED', label: 'Cancelada' }]} /></div>} />
+      <DataTable rows={result.data} columns={columns} search={search} onSearch={(value) => { setSearch(value); setPage(1); }} page={page} totalPages={result.totalPages} onPage={setPage} loading={loading} sortBy={sortBy} sortOrder={sortOrder} onSort={(key, order) => { setSortBy(key); setSortOrder(order); setPage(1); }} filters={<div><span className="label">Estado</span><SelectMenu compact ariaLabel="Filtrar órdenes por estado" value={statusFilter} onChange={(value) => { setStatusFilter(value); setPage(1); }} options={[{ value: 'all', label: 'Todos' }, { value: 'PENDING', label: 'Pendiente' }, { value: 'PARTIAL', label: 'Parcial' }, { value: 'RECEIVED', label: 'Recibida' }, { value: 'CANCELLED', label: 'Cancelada' }]} /></div>} />
       <FormDrawer open={drawer} title="Nueva orden de compra" onClose={() => setDrawer(false)}>
         <form className="space-y-6" onSubmit={handleSubmit(submit)}>
           <div><span className="label">Proveedor</span><SearchSelect value={watch('supplierId')} onChange={(value) => setValue('supplierId', value, { shouldDirty: true, shouldValidate: true })} options={suppliers.map((item) => ({ value: item.id, label: item.name, meta: item.ruc }))} /></div>

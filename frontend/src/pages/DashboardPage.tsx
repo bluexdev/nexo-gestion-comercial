@@ -50,7 +50,6 @@ export function DashboardPage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     api.get<ApiResponse<Metrics>>('/dashboard/metrics')
       .then(({ data }) => {
         if (!active) return;

@@ -13,13 +13,31 @@ export function ReceiptsPage() {
   const [orderId, setOrderId] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const selected = useMemo(() => orders.find((order) => order.id === orderId), [orders, orderId]);
   const pendingUnits = useMemo(() => orders.reduce((sum, order) => sum + order.details.reduce((lineSum, line) => lineSum + Math.max(0, line.quantity - line.receivedQty), 0), 0), [orders]);
   const selectedPendingUnits = useMemo(() => selected?.details.reduce((sum, line) => sum + Math.max(0, line.quantity - line.receivedQty), 0) ?? 0, [selected]);
   const plannedUnits = useMemo(() => Object.values(quantities).reduce((sum, value) => sum + value, 0), [quantities]);
-  const load = () => api.get<PagedResponse<PurchaseOrder>>('/purchase-orders', { params: { status: 'PENDING,PARTIAL', limit: 100 } }).then(({ data }) => setOrders(data.data));
-  useEffect(() => { void load(); }, []);
+  const load = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    try {
+      const { data } = await api.get<PagedResponse<PurchaseOrder>>('/purchase-orders', { params: { status: 'PENDING,PARTIAL', limit: 100 } });
+      setOrders(data.data);
+    } finally { setLoading(false); }
+  };
+  useEffect(() => {
+    let active = true;
+    api.get<PagedResponse<PurchaseOrder>>('/purchase-orders', { params: { status: 'PENDING,PARTIAL', limit: 100 } })
+      .then(({ data }) => {
+        if (active) setOrders(data.data);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => { active = false; };
+  }, []);
   const submit = async () => {
     if (!selected) return;
     const details = selected.details.map((line) => ({ purchaseOrderDetailId: line.id, quantity: quantities[line.id] || 0 })).filter((line) => line.quantity > 0);
@@ -34,15 +52,15 @@ export function ReceiptsPage() {
     <section>
       <PageHeader title="INGRESO DE MERCADERÍA" />
       <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard compact value={orders.length} label="OC disponibles" detail="Pendientes o parciales" />
-        <MetricCard compact value={pendingUnits} label="Unidades pendientes" detail="En órdenes abiertas" />
-        <MetricCard compact value={selectedPendingUnits} label="Pendiente seleccionado" detail={selected?.number ?? 'Sin OC seleccionada'} />
-        <MetricCard compact value={plannedUnits} label="Unidades a ingresar" detail="Formulario actual" />
+        <MetricCard compact loading={loading} value={orders.length} label="OC disponibles" detail="Pendientes o parciales" />
+        <MetricCard compact loading={loading} value={pendingUnits} label="Unidades pendientes" detail="En órdenes abiertas" />
+        <MetricCard compact loading={loading} value={selectedPendingUnits} label="Pendiente seleccionado" detail={selected?.number ?? 'Sin OC seleccionada'} />
+        <MetricCard compact loading={loading} value={plannedUnits} label="Unidades a ingresar" detail="Formulario actual" />
       </div>
       <div className="mx-auto max-w-4xl space-y-6">
         <article className="liquid-glass rounded-[32px] p-6 md:p-8">
           <span className="label">Paso 1 · Seleccionar orden</span>
-          <SearchSelect value={orderId} onChange={(value) => { setOrderId(value); const order = orders.find((item) => item.id === value); setQuantities(Object.fromEntries((order?.details ?? []).map((line) => [line.id, 0]))); }} options={orders.map((order) => ({ value: order.id, label: `${order.number} · ${order.supplier.name}`, meta: order.status }))} placeholder="Buscar OC pendiente" />
+          {loading ? <div className="skeleton-shimmer h-12 rounded-[14px]" /> : <SearchSelect value={orderId} onChange={(value) => { setOrderId(value); const order = orders.find((item) => item.id === value); setQuantities(Object.fromEntries((order?.details ?? []).map((line) => [line.id, 0]))); }} options={orders.map((order) => ({ value: order.id, label: `${order.number} · ${order.supplier.name}`, meta: order.status }))} placeholder="Buscar OC pendiente" />}
           {selected && <div className="mt-4"><StatusBadge status={selected.status} /></div>}
         </article>
         {selected && <>

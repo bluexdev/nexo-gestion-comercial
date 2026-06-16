@@ -89,10 +89,10 @@ export function ProductsPage() {
     <section>
       <PageHeader title="PRODUCTOS" accent="maestro" action={<button className="btn-primary" onClick={openNew}>+ Nuevo producto</button>} />
       <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard compact value={result.total} label="Productos filtrados" detail={`${stockSummary.visible} visibles en página`} />
-        <MetricCard compact value={stockSummary.stockUnits} label="Unidades visibles" detail="Según filtro actual" />
-        <MetricCard compact value={money(stockSummary.inventoryValue)} label="Valor visible" detail="Stock x precio" />
-        <MetricCard compact value={stockSummary.noStock} label="Sin stock" detail={`${stockSummary.lowStock} con stock bajo`} />
+        <MetricCard compact loading={loading} value={result.total} label="Productos filtrados" detail={`${stockSummary.visible} visibles en página`} />
+        <MetricCard compact loading={loading} value={stockSummary.stockUnits} label="Unidades visibles" detail="Según filtro actual" />
+        <MetricCard compact loading={loading} value={money(stockSummary.inventoryValue)} label="Valor visible" detail="Stock x precio" />
+        <MetricCard compact loading={loading} value={stockSummary.noStock} label="Sin stock" detail={`${stockSummary.lowStock} con stock bajo`} />
       </div>
       <DataTable rows={result.data} columns={columns} search={search} onSearch={(value) => { setSearch(value); setPage(1); }} page={page} totalPages={result.totalPages} onPage={setPage} loading={loading} sortBy={sortBy} sortOrder={sortOrder} onSort={(key, order) => { setSortBy(key); setSortOrder(order); setPage(1); }} filters={<div><span className="label">Estado</span><SelectMenu compact ariaLabel="Filtrar productos por estado" value={activeFilter} onChange={(value) => { setActiveFilter(value); setPage(1); }} options={[{ value: 'all', label: 'Todos' }, { value: 'active', label: 'Activos' }, { value: 'inactive', label: 'Inactivos' }]} /></div>} />
       <FormDrawer open={drawer} title={editing ? 'Editar producto' : 'Nuevo producto'} onClose={() => setDrawer(false)}>
