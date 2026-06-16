@@ -2,6 +2,7 @@
 
 Base local: `http://localhost:3000/api`.
 Base producción: `https://backend-production-05fcc.up.railway.app/api`.
+Base usada por frontend Vercel: `https://nexo-gestion-comercial.vercel.app/api` vía rewrite hacia Railway.
 Swagger producción: `https://backend-production-05fcc.up.railway.app/api/docs`.
 
 ## Endpoints

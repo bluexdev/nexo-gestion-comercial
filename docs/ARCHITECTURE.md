@@ -45,10 +45,10 @@ Credenciales seed:
 
 ## Despliegue
 
-- Frontend: Vercel aloja exclusivamente la SPA React/Vite. La URL publicada actual es `https://frontend-chi-ten-11.vercel.app`.
+- Frontend: Vercel aloja exclusivamente la SPA React/Vite. La URL publicada actual es `https://nexo-gestion-comercial.vercel.app`.
 - Backend: Railway aloja la API NestJS en `https://backend-production-05fcc.up.railway.app` y usa un servicio PostgreSQL administrado.
-- Vercel define `VITE_API_URL=https://backend-production-05fcc.up.railway.app/api`.
-- Railway debe definir `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `NODE_ENV=production` y `CORS_ORIGIN=https://frontend-chi-ten-11.vercel.app`.
+- Vercel define `VITE_API_URL=/api` y `frontend/vercel.json` reescribe `/api/*` hacia `https://backend-production-05fcc.up.railway.app/api/*`.
+- Railway debe definir `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `NODE_ENV=production` y `CORS_ORIGIN=https://nexo-gestion-comercial.vercel.app,https://frontend-chi-ten-11.vercel.app`.
 - La cookie de refresh se emite como `HttpOnly`, `Secure` y `SameSite=None` en producción para permitir el consumo cross-site Vercel -> Railway.
 - Las migraciones y el seed se ejecutan al arrancar la imagen backend.
 - Swagger público: `https://backend-production-05fcc.up.railway.app/api/docs`.

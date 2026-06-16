@@ -21,6 +21,7 @@
 [SUPUESTO-10] El seed debe poder repetirse → Se basa en `upsert` y claves de negocio estables → Facilita `docker compose up` y ambientes efímeros.
 
 [SUPUESTO-11] El despliegue real requiere sesiones externas autorizadas → Frontend y backend fueron publicados tras autenticar Vercel/Railway en CLI; los secretos quedan en las plataformas y no en el repositorio → GitHub sigue requiriendo un remoto o credenciales de la cuenta destino para publicar el código fuente.
+[SUPUESTO-13] El frontend público debe tener un dominio legible → Se renombra el proyecto Vercel a `nexo-gestion-comercial` y se publica `https://nexo-gestion-comercial.vercel.app` → La SPA consume `/api` mediante rewrite hacia Railway para mantener una URL limpia y estable.
 
 [SUPUESTO-12] El puerto local 8080 ya pertenece a otro contenedor → Compose admite `NGINX_PORT` y la validación se ejecuta en 8088 sin detener servicios ajenos → Mantiene 8080 como valor estándar y evita afectar otro proyecto.
 

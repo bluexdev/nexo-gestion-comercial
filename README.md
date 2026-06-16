@@ -43,7 +43,8 @@ npm run lint
 - [API](docs/API.md)
 - [Supuestos](docs/SUPUESTOS.md)
 - [Auditoría contra el prompt maestro](docs/AUDITORIA_PROMPT.md)
-- [Script SQL de base de datos](database/schema.sql)
+- [Script SQL completo de base de datos](database/database.sql)
+- [Scripts de base de datos](database/README.md)
 
 ## Capturas
 
@@ -76,19 +77,20 @@ El frontend está publicado en Vercel y el backend en Railway con PostgreSQL adm
 ### Entregables solicitados
 
 - Código fuente: publicar este directorio como repositorio Git.
-- Script de base de datos: `database/schema.sql` contiene el DDL PostgreSQL inicial; las migraciones oficiales están en `backend/prisma/migrations`.
+- Script de base de datos: `database/database.sql` contiene DDL PostgreSQL + seed idempotente; `database/schema.sql` y `database/seed.sql` quedan separados para revisión. Las migraciones oficiales están en `backend/prisma/migrations`.
 - Arquitectura: `docs/ARCHITECTURE.md`.
-- Frontend Vercel: `https://frontend-chi-ten-11.vercel.app` (SPA publicada y verificada con HTTP 200).
+- Frontend Vercel: `https://nexo-gestion-comercial.vercel.app` (SPA publicada y verificada con HTTP 200).
 - Backend Railway: `https://backend-production-05fcc.up.railway.app`.
 - Swagger público: `https://backend-production-05fcc.up.railway.app/api/docs`.
 - API pública: `https://backend-production-05fcc.up.railway.app/api`.
+- API desde la SPA: `/api/*` se reescribe en Vercel hacia Railway para evitar fricción de CORS en el navegador.
 
 ### Variables para despliegue
 
 Vercel:
 
 ```bash
-VITE_API_URL=https://backend-production-05fcc.up.railway.app/api
+VITE_API_URL=/api
 ```
 
 Backend:
@@ -97,8 +99,8 @@ Backend:
 DATABASE_URL=postgresql://...
 JWT_ACCESS_SECRET=<secret-32-plus-chars>
 JWT_REFRESH_SECRET=<secret-32-plus-chars>
-CORS_ORIGIN=https://frontend-chi-ten-11.vercel.app
+CORS_ORIGIN=https://nexo-gestion-comercial.vercel.app,https://frontend-chi-ten-11.vercel.app
 NODE_ENV=production
 ```
 
-La conexión Vercel -> Railway fue validada mediante login cross-origin con CORS, cookie `HttpOnly/Secure/SameSite=None` y access token en respuesta.
+La conexión Vercel -> Railway fue validada mediante `/api` rewrite, cookie `HttpOnly/Secure/SameSite=None` y access token en respuesta.
