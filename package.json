@@ -11,6 +11,6 @@
     "dev:frontend": "npm run dev -w frontend"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   }
 }
