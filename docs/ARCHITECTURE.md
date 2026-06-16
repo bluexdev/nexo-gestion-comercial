@@ -46,6 +46,7 @@ Credenciales seed:
 ## Despliegue
 
 - Frontend: Vercel aloja exclusivamente la SPA React/Vite. La URL publicada actual es `https://nexo-gestion-comercial.vercel.app`.
+- Repositorio: GitHub público `https://github.com/bluexdev/nexo-gestion-comercial`, conectado al proyecto Vercel `nexo-gestion-comercial`.
 - Backend: Railway aloja la API NestJS en `https://backend-production-05fcc.up.railway.app` y usa un servicio PostgreSQL administrado.
 - Vercel define `VITE_API_URL=/api` y `frontend/vercel.json` reescribe `/api/*` hacia `https://backend-production-05fcc.up.railway.app/api/*`.
 - Railway debe definir `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `NODE_ENV=production` y `CORS_ORIGIN=https://nexo-gestion-comercial.vercel.app,https://frontend-chi-ten-11.vercel.app`.

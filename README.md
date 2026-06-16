@@ -76,7 +76,7 @@ El frontend está publicado en Vercel y el backend en Railway con PostgreSQL adm
 
 ### Entregables solicitados
 
-- Código fuente: publicar este directorio como repositorio Git.
+- Código fuente: `https://github.com/bluexdev/nexo-gestion-comercial` (repositorio público).
 - Script de base de datos: `database/database.sql` contiene DDL PostgreSQL + seed idempotente; `database/schema.sql` y `database/seed.sql` quedan separados para revisión. Las migraciones oficiales están en `backend/prisma/migrations`.
 - Arquitectura: `docs/ARCHITECTURE.md`.
 - Frontend Vercel: `https://nexo-gestion-comercial.vercel.app` (SPA publicada y verificada con HTTP 200).
@@ -84,6 +84,7 @@ El frontend está publicado en Vercel y el backend en Railway con PostgreSQL adm
 - Swagger público: `https://backend-production-05fcc.up.railway.app/api/docs`.
 - API pública: `https://backend-production-05fcc.up.railway.app/api`.
 - API desde la SPA: `/api/*` se reescribe en Vercel hacia Railway para evitar fricción de CORS en el navegador.
+- Vercel está conectado al repositorio GitHub `bluexdev/nexo-gestion-comercial` para despliegues desde Git.
 
 ### Variables para despliegue
 
