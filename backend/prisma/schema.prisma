@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+}
+
+enum POStatus {
+  PENDING
+  PARTIAL
+  RECEIVED
+  CANCELLED
+}
+
+enum DocType {
+  DNI
+  RUC
+  CE
+}
+
+enum InvoiceStatus {
+  ISSUED
+  PAID
+  CANCELLED
+  DISPATCHED
+}
+
+enum DispatchStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+}
+
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          Role           @default(OPERATOR)
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  unit        String
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchaseOrderDetails PurchaseOrderDetail[]
+  receiptDetails       MerchandiseReceiptDetail[]
+  invoiceDetails       InvoiceDetail[]
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  ruc       String   @unique
+  name      String
+  contact   String?
+  phone     String?
+  email     String?
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+}
+
+model PurchaseOrder {
+  id         String   @id @default(uuid())
+  number     String   @unique
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  status     POStatus @default(PENDING)
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  details  PurchaseOrderDetail[]
+  receipts MerchandiseReceipt[]
+
+  @@index([supplierId])
+  @@index([status])
+}
+
+model PurchaseOrderDetail {
+  id              String                     @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder              @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product                    @relation(fields: [productId], references: [id])
+  quantity        Int
+  unitPrice       Decimal                    @db.Decimal(10, 2)
+  receivedQty     Int                        @default(0)
+  receiptDetails  MerchandiseReceiptDetail[]
+
+  @@unique([purchaseOrderId, productId])
+}
+
+model MerchandiseReceipt {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  receivedAt      DateTime      @default(now())
+  notes           String?
+  createdAt       DateTime      @default(now())
+
+  details MerchandiseReceiptDetail[]
+
+  @@index([purchaseOrderId])
+}
+
+model MerchandiseReceiptDetail {
+  id                    String              @id @default(uuid())
+  receiptId             String
+  receipt               MerchandiseReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  purchaseOrderDetailId String
+  purchaseOrderDetail   PurchaseOrderDetail @relation(fields: [purchaseOrderDetailId], references: [id])
+  productId             String
+  product               Product             @relation(fields: [productId], references: [id])
+  quantity              Int
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  docType   DocType  @default(DNI)
+  docNumber String   @unique
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices Invoice[]
+}
+
+model Invoice {
+  id         String        @id @default(uuid())
+  number     String        @unique
+  customerId String
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  issueDate  DateTime      @default(now())
+  subtotal   Decimal       @db.Decimal(10, 2)
+  tax        Decimal       @db.Decimal(10, 2)
+  total      Decimal       @db.Decimal(10, 2)
+  status     InvoiceStatus @default(ISSUED)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  details  InvoiceDetail[]
+  dispatch Dispatch?
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model InvoiceDetail {
+  id        String  @id @default(uuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+}
+
+model Dispatch {
+  id           String         @id @default(uuid())
+  invoiceId    String         @unique
+  invoice      Invoice        @relation(fields: [invoiceId], references: [id])
+  dispatchedAt DateTime       @default(now())
+  carrier      String?
+  trackingCode String?
+  address      String
+  status       DispatchStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Sequence {
+  key   String @id
+  value Int    @default(0)
+}

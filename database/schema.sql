@@ -1,0 +1,48 @@
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'OPERATOR');
+CREATE TYPE "POStatus" AS ENUM ('PENDING', 'PARTIAL', 'RECEIVED', 'CANCELLED');
+CREATE TYPE "DocType" AS ENUM ('DNI', 'RUC', 'CE');
+CREATE TYPE "InvoiceStatus" AS ENUM ('ISSUED', 'PAID', 'CANCELLED', 'DISPATCHED');
+CREATE TYPE "DispatchStatus" AS ENUM ('PENDING', 'IN_TRANSIT', 'DELIVERED', 'RETURNED');
+
+CREATE TABLE "User" ("id" TEXT NOT NULL, "name" TEXT NOT NULL, "email" TEXT NOT NULL, "password" TEXT NOT NULL, "role" "Role" NOT NULL DEFAULT 'OPERATOR', "active" BOOLEAN NOT NULL DEFAULT true, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "User_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "RefreshToken" ("id" TEXT NOT NULL, "tokenHash" TEXT NOT NULL, "userId" TEXT NOT NULL, "expiresAt" TIMESTAMP(3) NOT NULL, "revokedAt" TIMESTAMP(3), "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "RefreshToken_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Product" ("id" TEXT NOT NULL, "code" TEXT NOT NULL, "name" TEXT NOT NULL, "description" TEXT, "unit" TEXT NOT NULL, "price" DECIMAL(10,2) NOT NULL, "stock" INTEGER NOT NULL DEFAULT 0, "active" BOOLEAN NOT NULL DEFAULT true, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Product_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Supplier" ("id" TEXT NOT NULL, "ruc" TEXT NOT NULL, "name" TEXT NOT NULL, "contact" TEXT, "phone" TEXT, "email" TEXT, "address" TEXT, "active" BOOLEAN NOT NULL DEFAULT true, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Supplier_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "PurchaseOrder" ("id" TEXT NOT NULL, "number" TEXT NOT NULL, "supplierId" TEXT NOT NULL, "status" "POStatus" NOT NULL DEFAULT 'PENDING', "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "PurchaseOrder_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "PurchaseOrderDetail" ("id" TEXT NOT NULL, "purchaseOrderId" TEXT NOT NULL, "productId" TEXT NOT NULL, "quantity" INTEGER NOT NULL, "unitPrice" DECIMAL(10,2) NOT NULL, "receivedQty" INTEGER NOT NULL DEFAULT 0, CONSTRAINT "PurchaseOrderDetail_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "MerchandiseReceipt" ("id" TEXT NOT NULL, "purchaseOrderId" TEXT NOT NULL, "receivedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "MerchandiseReceipt_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "MerchandiseReceiptDetail" ("id" TEXT NOT NULL, "receiptId" TEXT NOT NULL, "purchaseOrderDetailId" TEXT NOT NULL, "productId" TEXT NOT NULL, "quantity" INTEGER NOT NULL, CONSTRAINT "MerchandiseReceiptDetail_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Customer" ("id" TEXT NOT NULL, "docType" "DocType" NOT NULL DEFAULT 'DNI', "docNumber" TEXT NOT NULL, "name" TEXT NOT NULL, "email" TEXT, "phone" TEXT, "address" TEXT, "active" BOOLEAN NOT NULL DEFAULT true, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Customer_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Invoice" ("id" TEXT NOT NULL, "number" TEXT NOT NULL, "customerId" TEXT NOT NULL, "issueDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "subtotal" DECIMAL(10,2) NOT NULL, "tax" DECIMAL(10,2) NOT NULL, "total" DECIMAL(10,2) NOT NULL, "status" "InvoiceStatus" NOT NULL DEFAULT 'ISSUED', "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "InvoiceDetail" ("id" TEXT NOT NULL, "invoiceId" TEXT NOT NULL, "productId" TEXT NOT NULL, "quantity" INTEGER NOT NULL, "unitPrice" DECIMAL(10,2) NOT NULL, "subtotal" DECIMAL(10,2) NOT NULL, CONSTRAINT "InvoiceDetail_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Dispatch" ("id" TEXT NOT NULL, "invoiceId" TEXT NOT NULL, "dispatchedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "carrier" TEXT, "trackingCode" TEXT, "address" TEXT NOT NULL, "status" "DispatchStatus" NOT NULL DEFAULT 'PENDING', "notes" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Dispatch_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "Sequence" ("key" TEXT NOT NULL, "value" INTEGER NOT NULL DEFAULT 0, CONSTRAINT "Sequence_pkey" PRIMARY KEY ("key"));
+
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX "RefreshToken_tokenHash_key" ON "RefreshToken"("tokenHash");
+CREATE INDEX "RefreshToken_userId_idx" ON "RefreshToken"("userId");
+CREATE UNIQUE INDEX "Product_code_key" ON "Product"("code");
+CREATE UNIQUE INDEX "Supplier_ruc_key" ON "Supplier"("ruc");
+CREATE UNIQUE INDEX "PurchaseOrder_number_key" ON "PurchaseOrder"("number");
+CREATE INDEX "PurchaseOrder_supplierId_idx" ON "PurchaseOrder"("supplierId");
+CREATE INDEX "PurchaseOrder_status_idx" ON "PurchaseOrder"("status");
+CREATE UNIQUE INDEX "PurchaseOrderDetail_purchaseOrderId_productId_key" ON "PurchaseOrderDetail"("purchaseOrderId", "productId");
+CREATE INDEX "MerchandiseReceipt_purchaseOrderId_idx" ON "MerchandiseReceipt"("purchaseOrderId");
+CREATE UNIQUE INDEX "Customer_docNumber_key" ON "Customer"("docNumber");
+CREATE UNIQUE INDEX "Invoice_number_key" ON "Invoice"("number");
+CREATE INDEX "Invoice_customerId_idx" ON "Invoice"("customerId");
+CREATE INDEX "Invoice_status_idx" ON "Invoice"("status");
+CREATE UNIQUE INDEX "Dispatch_invoiceId_key" ON "Dispatch"("invoiceId");
+
+ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PurchaseOrderDetail" ADD CONSTRAINT "PurchaseOrderDetail_purchaseOrderId_fkey" FOREIGN KEY ("purchaseOrderId") REFERENCES "PurchaseOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "PurchaseOrderDetail" ADD CONSTRAINT "PurchaseOrderDetail_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "MerchandiseReceipt" ADD CONSTRAINT "MerchandiseReceipt_purchaseOrderId_fkey" FOREIGN KEY ("purchaseOrderId") REFERENCES "PurchaseOrder"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "MerchandiseReceiptDetail" ADD CONSTRAINT "MerchandiseReceiptDetail_receiptId_fkey" FOREIGN KEY ("receiptId") REFERENCES "MerchandiseReceipt"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "MerchandiseReceiptDetail" ADD CONSTRAINT "MerchandiseReceiptDetail_purchaseOrderDetailId_fkey" FOREIGN KEY ("purchaseOrderDetailId") REFERENCES "PurchaseOrderDetail"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "MerchandiseReceiptDetail" ADD CONSTRAINT "MerchandiseReceiptDetail_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "InvoiceDetail" ADD CONSTRAINT "InvoiceDetail_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "InvoiceDetail" ADD CONSTRAINT "InvoiceDetail_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Dispatch" ADD CONSTRAINT "Dispatch_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

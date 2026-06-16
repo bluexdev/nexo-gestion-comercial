@@ -1,0 +1,3 @@
+-- El seed oficial es idempotente y requiere hash seguro de contraseñas.
+-- Docker y el quickstart ejecutan: npm run prisma:seed -w backend
+-- Este archivo se mantiene como punto de entrada documental solicitado.

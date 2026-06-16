@@ -1,0 +1,43 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: nexo
+          POSTGRES_USER: nexo
+          POSTGRES_PASSWORD: nexo_dev_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nexo -d nexo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://nexo:nexo_dev_password@localhost:5432/nexo?schema=public
+      JWT_ACCESS_SECRET: ci-access-secret-with-at-least-32-characters
+      JWT_REFRESH_SECRET: ci-refresh-secret-with-at-least-32-characters
+      CORS_ORIGIN: http://localhost:5173
+      SEED_ADMIN_PASSWORD: Admin123!
+      SEED_OPERATOR_PASSWORD: Operator123!
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run prisma:generate -w backend
+      - run: npm run prisma:migrate -w backend
+      - run: npm run prisma:seed -w backend
+      - run: npm run lint
+      - run: npm test
+      - run: npm run test:e2e -w backend -- --runInBand
+      - run: npm run build
